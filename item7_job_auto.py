@@ -1,3 +1,11 @@
+'''
+Task: calculate the number of jobs and hh population within ## mins by transit/auto mode for ## model scenario 
+inputs: urbansim inputs txt file, 7am-8am traffic bank, geographic boundry look up file 
+outputs: weighted job and household numbers (within ## mins by transit/auto mode for ## model scenario), with OD by ## geographic level
+Author: AngelaY. 
+Developed Time: 09/2018
+'''
+
 import inro.emme.database.emmebank as _eb
 import pandas as pd
 import numpy as np
@@ -27,7 +35,8 @@ geo_boundry = {'region' : 'region_id',
                'tract' : 'census_tract',
                'parcel' : 'parcel_id'}
 
-# get transit information
+## extract OD matrix from model outputs
+# if it is by tranist, get transit information
 def get_transit_information(bank):
     bus_time = bank.matrix('auxwa').get_numpy_data() + bank.matrix('twtwa').get_numpy_data() + bank.matrix('ivtwa').get_numpy_data() 
     rail_time = bank.matrix('auxwr').get_numpy_data() + bank.matrix('twtwr').get_numpy_data() + bank.matrix('ivtwr').get_numpy_data() 
@@ -41,8 +50,7 @@ def get_transit_information(bank):
     transit_time_df['from'] = transit_time_df['from'] + 1
     return transit_time_df
 
-
-# get auto information
+# if it is by auto, get auto information
 def get_auto_information(bank):
     time = bank.matrix('svtl2t').get_numpy_data() 
     veh_time = time[0:3700, 0:3700]
@@ -55,7 +63,8 @@ def get_auto_information(bank):
     return veh_time_df
 
 
-
+## process, reframe OD matrix; attach OD information to matrix; attach geographic boundry to matrix.  
+# if it is by transit 
 def process_transit_attribute(transit_time_data, transit_time_max,  attr_list, origin_df, dest_df, tract_dict, taz_dict):
     # get transit information
     transit = transit_time_data[transit_time_data.travel_time <= transit_time_max]
@@ -79,6 +88,7 @@ def process_transit_attribute(transit_time_data, transit_time_max,  attr_list, o
     transit_hh_emp['region_id'] = 1
     return transit_hh_emp
 
+# if it is by auto
 def process_auto_attribute(auto_time_data, time_max,  attr_list, origin_df, dest_df, tract_dict, taz_dict):
     # get transit information
     auto = auto_time_data[auto_time_data.travel_time <= time_max]
@@ -99,6 +109,8 @@ def process_auto_attribute(auto_time_data, time_max,  attr_list, origin_df, dest
     origin_dest_emp_hh['region_id'] = 1
     return origin_dest_emp_hh
 
+
+## calculate weighted job and housing index 
 def get_average_jobs(transit_data, geo_attr, parcel_attributes_list):
     for res_name in parcel_attributes_list: 
         print 'process attribute: ', res_name
@@ -114,9 +126,10 @@ def get_average_jobs(transit_data, geo_attr, parcel_attributes_list):
         transit_data_groupby[averaged_res_name] = transit_data_groupby[weighted_res_name]/transit_data_groupby['HH_P']
     return transit_data_groupby
 
+
 def main():
 
-    # get geo location information
+    # make geo location information ready
     parcel_df = pd.read_csv(os.path.join(model_path, parcel_file_name), sep = ' ')
     parcel_df['HH_P_test'] = parcel_df['HH_P']
     geo_df = pd.DataFrame.from_csv(os.path.join(geo_path, geo_file_name), sep = ',', index_col = None )
@@ -128,6 +141,7 @@ def main():
     origin_df = pd.DataFrame(geo_df.groupby(['parcel_id'])['HH_P'].sum())
     origin_df.reset_index(inplace=True)
     origin_df['taz_id'] = origin_df['parcel_id'].map(taz_dict) #need TAZ to join with transit time table 
+
     # orgnize destination information
     dest_df = pd.DataFrame(geo_df.groupby(['TAZ_P'])[parcel_attributes_list].sum())
     dest_df.reset_index(inplace=True)
@@ -137,12 +151,11 @@ def main():
     if mode == 'transit':
         time_df = get_transit_information(bank)
         travel_df = process_transit_attribute(time_df, time_max, parcel_attributes_list, origin_df, dest_df, tract_dict, taz_dict)
-
     if mode == 'auto':
         time_df = get_auto_information(bank)
         travel_df = process_auto_attribute(time_df, time_max, parcel_attributes_list, origin_df, dest_df, tract_dict, taz_dict)
 
-    # calculate jobs on transit time
+    # calculate jobs on transit/auto travel time
     for geo in geo_list:
         print geo
         average_jobs_df = get_average_jobs(travel_df, geo_boundry[geo], parcel_attributes_list) 

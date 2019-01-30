@@ -57,9 +57,6 @@ print (table_names)
 
 
 
-    
-
-
 ## 4. if the table name already duplicated in the SQL database (Sandbox here), then delete the previous table!  Please be very careful of this step!!!! 
 table_exists = my_tablename in table_names
 if table_exists == True:
@@ -70,7 +67,6 @@ if table_exists == True:
 
 
 
-## 5. Creating a new table named HHSurvey_trips in Sandbox to hold the maintain the HH survey trips
 sql_statement1 = 'create table ' + my_tablename 
 sql_statement2 = '( ' + \
                  'ID INT NULL, ' + \
