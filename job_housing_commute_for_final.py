@@ -1,21 +1,36 @@
+'''
+Task:  Calculate commute information for specific j-h range (## scenario, on ## geographic level)
+inputs: urbansim inputs txt file, job-housing ratio file, geographic boundry look up file
+outputs: geographic classes, j-h classes, commute information, hh information
+Author: AngelaY. 
+Developed Time: 10/02/2018
+update log: 1/2019, add some comments
+'''
+
 import pandas as pd 
 import numpy as np 
 import os 
 import h5py
 #from statsmodels.graphics.mosaicplot import mosaic
 
-year = '2014'
+year = '2050'
 time = '30'
-scenario = 'stc' # stc, dug, h202, non_integrated
-geo = 'bin' #taz, bin, county, region
+scenario = 'rug' # stc, dug, h202, non_integrated
+geo = 'county' #taz, bin, county, region
 hh_tot = 'hh_' + year
-bin1 = 1.0
-bin2 = 1.8
+bin1 = 1.0 # the threshold for job-housing ratio 
+bin2 = 1.8 # the threshold for job-housing ratio 
 
-output_path = r'U:\\angela\job_housing\soundcast_2050\job_housing_commute\final_set' 
+
+### OUTPUT
+output_path = r'U:\\angela\job_housing\soundcast_2050\data_request_01_2019_JHratio' 
+
+#### INPUT 
 # input for job/housing accessibility
-job_path = r'U:\\angela\job_housing\soundcast_2050\job_housing_commute'
+# assume it is auto and it has to be on TAZ level, because auto/transit information only has on TAZ level
+job_path = r'U:\\angela\job_housing\soundcast_2050\data_request_01_2019_JHratio'
 job_file_name = 'taz' + '_auto_' + year + '_' + time + 'min_' + scenario + '.csv' 
+
 # input for household and commute
 if year == '2014':
     relative_path = r'\\license\Model Archive\T2040\soundcast_2014\outputs'
@@ -33,7 +48,9 @@ if year == '2050':
     if scenario == 'h2o2':
         relative_path = r'L:\\vision2050\soundcast\integrated\h202\2050\outputs' 
         daysim_path =  r'U:\angela\job_housing\soundcast_2050\inputs\2050\H2O2'
-
+    if scenario == 'rug':
+        relative_path = r'L:\vision2050\soundcast\integrated\final_runs\rug\rug_run_5.run_2018_10_25_09_07\2050\outputs' 
+        daysim_path =  r'L:\vision2050\soundcast\integrated\final_runs\rug\rug_run_5.run_2018_10_25_09_07\2050\outputs\daysim'
 
 
 geo_boundry = {'county': 'county_id',
@@ -46,7 +63,7 @@ geo_boundry = {'county': 'county_id',
 
 # input for job/housing accessibility
 '''
-The job / housing ratios are calculated by diff senarios!!!
+The job / housing ratios are various by diff scenarios, so it has to be calculated BASED ON diff senarios!!!
 Please make sure you run another scipt to product the newest ratio.
 the output table are named by year, time buffer, scenario 
 '''

@@ -1,3 +1,13 @@
+'''
+Task:  
+inputs: 
+outputs: 
+Author: AngelaY. 
+Developed Time: 10/2018
+'''
+
+
+
 import pandas as pd 
 import numpy as np 
 import os 
@@ -41,6 +51,9 @@ if year == '2050':
     if scenario == 'non_integrated':
         relative_path = r'L:\\vision2050\soundcast\non_integrated\2050\updated_tod_top_down_2050\outputs' 
         model_path =  r'L:\\vision2050\soundcast\non_integrated\2050\updated_tod_top_down_2050'
+    if scenario == 'rug': # reset urban growth, latest run 01/2019
+       # relative_path = r'L:\\vision2050\soundcast\non_integrated\2050\updated_tod_top_down_2050\outputs' 
+        #model_path =  r'L:\\vision2050\soundcast\non_integrated\2050\updated_tod_top_down_2050' 
 
 person = pd.read_csv(os.path.join(relative_path, r'daysim/') + r'_person.tsv', sep='\\t')
 hh = pd.read_csv(os.path.join(relative_path, r'daysim/') + r'_household.tsv', sep='\\t')

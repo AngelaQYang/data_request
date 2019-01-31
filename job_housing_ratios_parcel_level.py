@@ -1,26 +1,31 @@
 '''
-Task:  Calculate job/housing ratio 
+Task:  Calculate job/housing ratio (if it is a prepraration step fpr 'job housing commute', then the geo-setting must be TAZ level)
 inputs: urbansim inputs txt file, 7am-8am traffic bank, geographic boundry look up file
-outputs: 
+outputs: geo-level calsses, jobs within ## mins, hh info within ## mins, job/housing ratio, j-h classes
 Author: AngelaY. 
-Developed Time: 10/11/2018
+Developed Time: 10/2018
+update log: 1/2019, run scenario rug, add some comments
 '''
 
-import inro.emme.database.emmebank as _eb
+import inro.emme.database.emmebank as _eb # you need an EMME license 
 import pandas as pd
 import numpy as np
 import os
 
-year = 2014
-scenario = 'loads' # stc, dug, non_integrated, h202
+year = 2050
+scenario = 'rug' # stc, dug, non_integrated, h202
 geo = 'taz'
 transit_time_max = 30
-mode_meansurement = 'transit'
+mode_meansurement = 'auto'
 bank_tod = '7to8'
 parcel_attributes_list = ['EMPTOT_P', 'HH_P_test']
 
-output_path = 'U:\\angela\job_housing\soundcast_2050\job_housing_commute'
+## OUTPUT
 
+output_path = 'S:\\angela\job_housing\soundcast_2050\job_housing_commute' # make sure S drive still is modelsrv7 
+output_file_name = geo + '_' + mode_meansurement + '_' + str(year) + '_' + str(transit_time_max) + 'min_' + scenario + '.csv'
+
+## INPUT 
 if year == 2014:
     if scenario == 'loads':
         model_path = r'L:\\vision2050\soundcast\non_integrated\2014' 
@@ -39,9 +44,12 @@ if year == 2050:
     if scenario == 'h2o2':
         model_path = r'L:\\vision2050\soundcast\integrated\h2o2\2050'
         parcel_file_name = 'inputs\\scenario\\landuse\\parcels_urbansim.txt'
+    if scenario == 'rug':
+        model_path = r'L:\\vision2050\soundcast\integrated\final_runs\rug\rug_run_5.run_2018_10_25_09_07\2050' 
+        parcel_file_name =  r'inputs\\scenario\\landuse\\parcels_urbansim.txt'
 
 
-geo_path = 'S:\\angela\job_housing\soundcast_2050\inputs\\accessibility'
+geo_path = 'S:\\angela\job_housing\soundcast_2050\inputs\\accessibility' # make sure geo file still there, S drive still modelsrv 7 
 geo_file_name = 'parcel_tract_county.csv'
 geo_boundry = {'county': 'county_id',
                'city': 'city_id',
@@ -155,7 +163,7 @@ def main():
     bank = _eb.Emmebank(os.path.join(model_path, 'Banks', bank_tod, 'emmebank'))
     if mode_meansurement == 'auto':
         print mode_meansurement
-        transit_time_df = get_auto_information(bank)
+        transit_time_df = get_auto_information(bank) # will have to fix this code later 
     else:
         print mode_meansurement
         transit_time_df = get_transit_information(bank)
@@ -167,7 +175,6 @@ def main():
     # calculate jobs on transit time
     average_jobs_df = get_average_jobs(transit_df, geo_boundry[geo], parcel_attributes_list) 
     print average_jobs_df
-    output_file_name = geo + '_transit_' + str(year) + '_' + str(transit_time_max) + 'min_' + scenario + '.csv'
     average_jobs_df.to_csv(os.path.join(output_path, output_file_name), index=False)
     print 'output file name is: ', output_file_name
     #return average_jobs_df
