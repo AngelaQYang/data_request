@@ -4,7 +4,8 @@ inputs: urbansim inputs txt file, job-housing ratio file, geographic boundry loo
 outputs: geographic classes, j-h classes, commute information, hh information
 Author: AngelaY. 
 Developed Time: 10/02/2018
-update log: 1/2019, add some comments
+update log: 1/2019, add some comments, update latest model runs locations
+update log: 2/1, update input file - taz travel time, this file was updated from am traffic time to be (am+pm)/2
 '''
 
 import pandas as pd 
@@ -15,12 +16,14 @@ import h5py
 
 year = '2050'
 time = '30'
-scenario = 'rug' # stc, dug, h202, non_integrated
+time_period = 'ampm'
+scenario = 'Transit Forcused Growth' # stc, dug, h202, non_integrated
 geo = 'county' #taz, bin, county, region
 hh_tot = 'hh_' + year
 bin1 = 1.0 # the threshold for job-housing ratio 
 bin2 = 1.8 # the threshold for job-housing ratio 
 
+print '**************', scenario , time_period, "*************"
 
 ### OUTPUT
 output_path = r'U:\\angela\job_housing\soundcast_2050\data_request_01_2019_JHratio' 
@@ -29,12 +32,15 @@ output_path = r'U:\\angela\job_housing\soundcast_2050\data_request_01_2019_JHrat
 # input for job/housing accessibility
 # assume it is auto and it has to be on TAZ level, because auto/transit information only has on TAZ level
 job_path = r'U:\\angela\job_housing\soundcast_2050\data_request_01_2019_JHratio'
-job_file_name = 'taz' + '_auto_' + year + '_' + time + 'min_' + scenario + '.csv' 
+job_file_name = 'taz' + '_auto_' + year + '_' + time + 'min_' + time_period + '_' +  scenario + '.csv' 
 
 # input for household and commute
 if year == '2014':
-    relative_path = r'\\license\Model Archive\T2040\soundcast_2014\outputs'
-    daysim_path = r'\\license\Model Archive\T2040\soundcast_2014\outputs\daysim'
+    #relative_path = r'\\license\Model Archive\T2040\soundcast_2014\outputs'
+    #daysim_path = r'\\license\Model Archive\T2040\soundcast_2014\outputs\daysim'
+    if scenario == 'Current':
+        relative_path = r'L:\vision2050\soundcast\integrated\final_runs\base_year\2014\outputs' 
+        daysim_path =  r'L:\vision2050\soundcast\integrated\final_runs\base_year\2014\outputs\daysim'
 if year == '2050':
     if scenario == 'dug':
         relative_path = r'L:\\vision2050\soundcast\integrated\dug\2050\outputs'
@@ -51,6 +57,12 @@ if year == '2050':
     if scenario == 'rug':
         relative_path = r'L:\vision2050\soundcast\integrated\final_runs\rug\rug_run_5.run_2018_10_25_09_07\2050\outputs' 
         daysim_path =  r'L:\vision2050\soundcast\integrated\final_runs\rug\rug_run_5.run_2018_10_25_09_07\2050\outputs\daysim'
+    if scenario == 'Transit Forcused Growth':
+        relative_path = r'L:\\vision2050\soundcast\integrated\final_runs\tod\tod_run_8.run_2018_10_29_15_01\2050\outputs' 
+        daysim_path =  r'L:\\vision2050\soundcast\integrated\final_runs\tod\tod_run_8.run_2018_10_29_15_01\2050\outputs\daysim'
+    if scenario == 'Stay the Course':
+        relative_path = r'L:\\vision2050\soundcast\integrated\final_runs\stc\stc_run_6.run_2018_10_23_11_15\2050\outputs' 
+        daysim_path =  r'L:\\vision2050\soundcast\integrated\final_runs\stc\stc_run_6.run_2018_10_23_11_15\2050\outputs\daysim'
 
 
 geo_boundry = {'county': 'county_id',
@@ -130,7 +142,7 @@ NOTE: exclude the TAZ with 0 workers/commuters, use left join to worker groups
 jobs_commute = workers_groupby.merge(jobs, how='left', left_on = 'hhtaz', right_on='TAZ_P')
 
 # save TAZ file 
-output_file = 'commute_' + 'taz' + '_' + year + '_' + time + 'mins_' + scenario + '.csv'
+output_file = 'commute_' + 'taz' + '_' + year + '_' + time + 'mins_' + time_period + '_' + scenario + '.csv'
 jobs_commute.to_csv(os.path.join(output_path,output_file),index=False)
 
 
@@ -186,45 +198,53 @@ full_list_taz.to_csv(os.path.join(validation_path, validation_file), index=False
 
 ############# output final result 
 if time == '30':
-    if (a == b) and (a == c+4):
-        g1_file = 'commute_bin_' + str(bin1) + '_' + str(bin2) + '_' + year + '_' + time + 'mins_' + scenario + '.csv'
+    #if (a == b) and (a == c+4):
+        g1_file = 'commute_bin_' + str(bin1) + '_' + str(bin2) + '_' + year + '_' + time + 'mins_' + time_period + '_' + scenario + '.csv'
         g1_size.to_csv(os.path.join(output_path, g1_file), index=False)
         print 'done'
 
 if time == '45':
     if (a == b) and (a == c):
-        g1_file = 'commute_' + geo + '_' + year + '_' + time + 'mins_' + scenario + '.csv'
+        g1_file = 'commute_' + geo + '_' + year + '_' + time + 'mins_' + time_period + '_' +  scenario + '.csv'
         g1_size.to_csv(os.path.join(output_path, g1_file), index=False)
         print 'done'
 
 
+'''
+########## data request: aggregate to county and region level #########################
+if geo is in ['county', 'region']:
+    # weighted by household numbers: 'hh_tot' or worker number: 'count'
+    job_commute_file_name = 'commute_' + 'taz' + '_' + year + '_' + time + 'mins_' + scenario + '.csv'
+    jobs_commute = pd.read_csv(os.path.join(output_path,job_commute_file_name))
+    # weighted by household numbers: 'hh_tot' or worker number: 'count'
+    jobs_commute['weighted_dist_hh'] = jobs_commute[hh_tot] * jobs_commute['mean_dist']
+    jobs_commute['weighted_dist_worker'] = jobs_commute['count'] * jobs_commute['mean_dist']
+    jobs_commute['weighted_time_hh'] = jobs_commute[hh_tot] * jobs_commute['mean_time']
+    jobs_commute['weighted_time_worker'] = jobs_commute['count'] * jobs_commute['mean_time']
+    g2 = jobs_commute.groupby(geo_boundry[geo])['count', hh_tot, 'weighted_dist_worker', 'weighted_dist_hh', 'weighted_time_worker', 'weighted_time_hh'].sum().reset_index()
+
+    g2['avg_dist_worker'] = g2['weighted_dist_worker']/g2['count']
+    g2['avg_dist_hh'] = g2['weighted_dist_hh']/g2[hh_tot]
+    g2['avg_time_worker'] = g2['weighted_time_worker']/g2['count']
+    g2['avg_time_hh'] = g2['weighted_time_hh']/g2[hh_tot]
+    wk_sum = g2['count'].sum()
+    hh_sum = g2[hh_tot].sum()
+    g2['prop_worker'] = g2['count'] / wk_sum
+    g2['prop_hh'] = g2[hh_tot] / hh_sum
+    taz_size = jobs_commute.groupby(geo_boundry[geo]).size().reset_index(False)
+    taz_size.columns = [geo_boundry[geo], 'taz_count']
+    g2_size = g2.merge(taz_size, on = geo_boundry[geo], how='left')
+    g2_file_name = 'commute_' + geo + '_' + year + '_' + time + 'mins_' + scenario + '.csv'
+    g2_size.to_csv(os.path.join(output_path, g2_file_name), index=False)
 
 '''
 
-########## aggregate to county and region level #########################
-# weighted by household numbers: 'hh_tot' or worker number: 'count'
-job_commute_file_name = 'commute_' + 'taz' + '_' + year + '_' + time + 'mins_' + scenario + '.csv'
-jobs_commute = pd.read_csv(os.path.join(output_path,job_commute_file_name))
-# weighted by household numbers: 'hh_tot' or worker number: 'count'
-jobs_commute['weighted_dist_hh'] = jobs_commute[hh_tot] * jobs_commute['mean_dist']
-jobs_commute['weighted_dist_worker'] = jobs_commute['count'] * jobs_commute['mean_dist']
-jobs_commute['weighted_time_hh'] = jobs_commute[hh_tot] * jobs_commute['mean_time']
-jobs_commute['weighted_time_worker'] = jobs_commute['count'] * jobs_commute['mean_time']
-g2 = jobs_commute.groupby(geo_boundry[geo])['count', hh_tot, 'weighted_dist_worker', 'weighted_dist_hh', 'weighted_time_worker', 'weighted_time_hh'].sum().reset_index()
-
-g2['avg_dist_worker'] = g2['weighted_dist_worker']/g2['count']
-g2['avg_dist_hh'] = g2['weighted_dist_hh']/g2[hh_tot]
-g2['avg_time_worker'] = g2['weighted_time_worker']/g2['count']
-g2['avg_time_hh'] = g2['weighted_time_hh']/g2[hh_tot]
-wk_sum = g2['count'].sum()
-hh_sum = g2[hh_tot].sum()
-g2['prop_worker'] = g2['count'] / wk_sum
-g2['prop_hh'] = g2[hh_tot] / hh_sum
-taz_size = jobs_commute.groupby(geo_boundry[geo]).size().reset_index(False)
-taz_size.columns = [geo_boundry[geo], 'taz_count']
-g2_size = g2.merge(taz_size, on = geo_boundry[geo], how='left')
-g2_file_name = 'commute_' + geo + '_' + year + '_' + time + 'mins_' + scenario + '.csv'
-g2_size.to_csv(os.path.join(output_path, g2_file_name), index=False)
+######### data request: job housing classes break down to every county 
+if geo == 'county':
+    g3 = jobs_commute.groupby(['bin', 'county_id'])['count', hh_tot, 'weighted_dist_worker', 'weighted_dist_hh', 'weighted_time_worker', 'weighted_time_hh'].sum().reset_index()
+    g3_file_name = 'commute_county_bin' + '_' + year + '_' + time + 'mins_' + time_period + '_' + scenario + '.csv'
+    g3.to_csv(os.path.join(output_path, g3_file_name), index=False)
 
 
-'''
+
+

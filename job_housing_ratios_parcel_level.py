@@ -4,7 +4,10 @@ inputs: urbansim inputs txt file, 7am-8am traffic bank, geographic boundry look 
 outputs: geo-level calsses, jobs within ## mins, hh info within ## mins, job/housing ratio, j-h classes
 Author: AngelaY. 
 Developed Time: 10/2018
-update log: 1/2019, run scenario rug, add some comments
+update log: 
+1/30/2019, run scenario rug, add some comments
+1/31 update other scenarios newest locations
+2/6 update the AM (7am-8am) auto time to be AM PM (5pm-6pm) averaged: am+(pm.transpose)/2 
 '''
 
 import inro.emme.database.emmebank as _eb # you need an EMME license 
@@ -12,24 +15,35 @@ import pandas as pd
 import numpy as np
 import os
 
-year = 2050
-scenario = 'rug' # stc, dug, non_integrated, h202
+year = 2014
+scenario = 'Current' # stc, dug, non_integrated, h202
 geo = 'taz'
 transit_time_max = 30
 mode_meansurement = 'auto'
-bank_tod = '7to8'
+time_period = 'ampm' 
+if time_period == 'am':
+    BANK_TOD_AM = '7to8'
+    BANK_TOD_PM = '7to8'
+if time_period == 'ampm':  ##### test out AM + pm / 2 
+    BANK_TOD_AM = '7to8'
+    BANK_TOD_PM = '17to18'
+   
+
 parcel_attributes_list = ['EMPTOT_P', 'HH_P_test']
 
 ## OUTPUT
 
-output_path = 'S:\\angela\job_housing\soundcast_2050\job_housing_commute' # make sure S drive still is modelsrv7 
-output_file_name = geo + '_' + mode_meansurement + '_' + str(year) + '_' + str(transit_time_max) + 'min_' + scenario + '.csv'
+output_path = 'S:\\angela\job_housing\soundcast_2050\data_request_01_2019_JHratio' # make sure S drive still is modelsrv7 
+output_file_name = geo + '_' + mode_meansurement + '_' + str(year) + '_' + str(transit_time_max) + 'min_' + time_period + '_' + scenario + '.csv'
 
 ## INPUT 
 if year == 2014:
     if scenario == 'loads':
         model_path = r'L:\\vision2050\soundcast\non_integrated\2014' 
         parcel_file_name = 'inputs\scenario\landuse\parcels_urbansim.txt' 
+    if scenario == 'Current':
+        model_path = r'L:\vision2050\soundcast\integrated\final_runs\base_year\2014'
+        parcel_file_name =  r'inputs\\scenario\\landuse\\parcels_urbansim.txt'
 
 if year == 2050:
     if scenario == 'dug':
@@ -44,9 +58,21 @@ if year == 2050:
     if scenario == 'h2o2':
         model_path = r'L:\\vision2050\soundcast\integrated\h2o2\2050'
         parcel_file_name = 'inputs\\scenario\\landuse\\parcels_urbansim.txt'
+    # below are for 1/2019 run 
     if scenario == 'rug':
-        model_path = r'L:\\vision2050\soundcast\integrated\final_runs\rug\rug_run_5.run_2018_10_25_09_07\2050' 
+        model_path = r'L:\\vision2050\soundcast\integrated\final_runs\rug\rug_run_5.run_2018_10_25_09_07\2050'
         parcel_file_name =  r'inputs\\scenario\\landuse\\parcels_urbansim.txt'
+    if scenario == 'Transit Forcused Growth':
+        model_path = r'L:\\vision2050\soundcast\integrated\final_runs\tod\tod_run_8.run_2018_10_29_15_01\2050'
+        parcel_file_name =  r'inputs\\scenario\\landuse\\parcels_urbansim.txt'
+    if scenario == 'Stay the Course':
+        model_path = r'L:\\vision2050\soundcast\integrated\final_runs\stc\stc_run_6.run_2018_10_23_11_15\2050'
+        parcel_file_name =  r'inputs\\scenario\\landuse\\parcels_urbansim.txt'
+
+
+
+
+
 
 
 geo_path = 'S:\\angela\job_housing\soundcast_2050\inputs\\accessibility' # make sure geo file still there, S drive still modelsrv 7 
@@ -90,8 +116,13 @@ def get_transit_information(bank):
 
 
 # get auto information
-def get_auto_information(bank):
-    time = bank.matrix('svtl2t').get_numpy_data() 
+def get_auto_information(bank_am, bank_pm):
+    # get the averaged time from AM and PM
+    time_am = bank_am.matrix('svtl2t').get_numpy_data()
+    time_pm = bank_pm.matrix('svtl2t').get_numpy_data()
+    time_pm2 = time_pm.transpose()
+    time = (time_am + time_pm2)/2
+    #time = bank.matrix('svtl2t').get_numpy_data() 
     veh_time = time[0:3700, 0:3700]
     veh_time_df = pd.DataFrame(veh_time)
     veh_time_df['from'] = veh_time_df.index
@@ -143,12 +174,14 @@ def main():
 
     # get origin information
     parcel_df = pd.read_csv(os.path.join(model_path, parcel_file_name), sep = ' ')
+    print 'here0'
     parcel_df['HH_P_test'] = parcel_df['HH_P']
     geo_df = pd.DataFrame.from_csv(os.path.join(geo_path, geo_file_name), sep = ',', index_col = None )
     geo_df = pd.merge(parcel_df, geo_df, left_on = 'PARCELID', right_on = 'parcel_id')
     city_dict = geo_df.set_index(['TAZ_P']).to_dict()['city_id']
     county_dict = geo_df.set_index(['TAZ_P']).to_dict()['county_id']
     city_name_dict = geo_df.set_index(['TAZ_P']).to_dict()['city_name']
+    print 'here1'
     # organize origin information
     origin_df = pd.DataFrame(geo_df.groupby(['TAZ_P'])['HH_P'].sum())
     origin_df.reset_index(inplace=True)
@@ -160,10 +193,12 @@ def main():
     dest_df = pd.DataFrame(geo_df.groupby(['TAZ_P'])[parcel_attributes_list].sum())
     dest_df.reset_index(inplace=True)
     # process transit time
-    bank = _eb.Emmebank(os.path.join(model_path, 'Banks', bank_tod, 'emmebank'))
+    #bank = _eb.Emmebank(os.path.join(model_path, 'Banks', bank_tod, 'emmebank'))
+    bank_am = _eb.Emmebank(os.path.join(model_path, 'Banks', BANK_TOD_AM, 'emmebank'))
+    bank_pm = _eb.Emmebank(os.path.join(model_path, 'Banks', BANK_TOD_PM, 'emmebank'))  
     if mode_meansurement == 'auto':
         print mode_meansurement
-        transit_time_df = get_auto_information(bank) # will have to fix this code later 
+        transit_time_df = get_auto_information(bank_am, bank_pm) # will have to fix this code later 
     else:
         print mode_meansurement
         transit_time_df = get_transit_information(bank)
