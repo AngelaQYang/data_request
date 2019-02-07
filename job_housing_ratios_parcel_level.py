@@ -23,7 +23,7 @@ mode_meansurement = 'auto'
 time_period = 'ampm' 
 if time_period == 'am':
     BANK_TOD_AM = '7to8'
-    BANK_TOD_PM = '7to8'
+    #BANK_TOD_PM = '7to8' it will defnintely couse error, fix it! 
 if time_period == 'ampm':  ##### test out AM + pm / 2 
     BANK_TOD_AM = '7to8'
     BANK_TOD_PM = '17to18'

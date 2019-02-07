@@ -5,7 +5,7 @@ outputs: geographic classes, j-h classes, commute information, hh information
 Author: AngelaY. 
 Developed Time: 10/02/2018
 update log: 1/2019, add some comments, update latest model runs locations
-update log: 2/1, update input file - taz travel time, this file was updated from am traffic time to be (am+pm)/2
+update log: 2/1, update input file - taz travel time, this file was updated from am traffic time to be (am+pm.transpose())/2
 '''
 
 import pandas as pd 
@@ -14,10 +14,10 @@ import os
 import h5py
 #from statsmodels.graphics.mosaicplot import mosaic
 
-year = '2050'
+year = '2014'
 time = '30'
 time_period = 'ampm'
-scenario = 'Transit Forcused Growth' # stc, dug, h202, non_integrated
+scenario = 'Current' # stc, dug, h202, non_integrated
 geo = 'county' #taz, bin, county, region
 hh_tot = 'hh_' + year
 bin1 = 1.0 # the threshold for job-housing ratio 
